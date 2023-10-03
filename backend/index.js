@@ -35,6 +35,13 @@ const generateHashForEazeBuzz = ({ key, txnid, amount, productinfo, firstname, e
 	return hashSequence;
 };
 
+const reverseHashForEazeBuzz = ({ key, txnid, amount, productinfo, firstname, email, salt, status }) => {
+	const hashString =
+		salt + "|" + status + "|" + "|" + "|" + "|" + "|" + "|" + "|" + "|" + "|" + "|" + "|" + email + "|" + firstname + "|" + productinfo + "|" + amount + "|" + txnid + "|" + key;
+	const hashSequence = sha512(hashString);
+	return hashSequence;
+};
+
 app.post(
 	"/api/test/initiate_payment",
 	expressAsyncHandler(async (req, res) => {
@@ -139,23 +146,35 @@ app.post(
 		try {
 			const { data } = await axios.post(call_url, formData, options);
 
-			// if (iframe === "0") {
-			// 	const url = call_url + "pay/" + data.data;
-			// 	return res.json({ url });
-			// } else {
-			// 	return res.json({
-			// 		key,
-			// 		access_key: data.data,
-			// 	});
-			// }
+			// const newHash = sha512(hashSequence);
 
-			return res.json({ access_url: data.data, url: call_url, iframe });
+			return res.json({ access_url: data.data, key, txnid, hash: hashSequence });
 		} catch (error) {
 			console.error(error);
 			return res.json({ message: error.message });
 		}
 	})
 );
+
+app.post("/api/test/payment_result", async (req, res) => {
+	const data = req.body;
+	const salt = process.env.EAZEBUZZ_SALT;
+	const key = process.env.EASEBUZZ_KEY;
+	const reverseHashToken = reverseHashForEazeBuzz({
+		key,
+		txnid: data.txnid,
+		amount: data.amount,
+		productinfo: data.productinfo,
+		firstname: data.firstname,
+		email: data.email,
+		salt,
+		status: data.status,
+	});
+
+	if (reverseHashToken === data.hash) {
+		return res.json({ rmessage: "Token Matched" });
+	}
+});
 
 const PORT = 8000;
 

@@ -1,19 +1,17 @@
 import { useState } from "react";
 import "./App.css";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 
 const App = () => {
-	const navigate = useNavigate;
-
 	const [formData, setFormData] = useState({
 		amount: "5021.00",
 		productinfo: "vercel Data",
 		firstname: "Narayan",
 		phone: "8974269456",
 		email: "narayan@jewellerskart.com",
-		surl: "http://localhost:8000/payment_result",
-		furl: "http://localhost:8000/payment_result",
+		surl: "http://localhost:8000/api/test/payment_result",
+		furl: "http://localhost:8000/api/test/payment_result",
 		udf1: "",
 		udf2: "",
 		udf3: "",
@@ -46,7 +44,15 @@ const App = () => {
 			const { data } = await axios.post("http://localhost:8000/api/test/initiate_payment", formData);
 			console.log(data);
 			if (data) {
-				navigate(data.url);
+				let eazebuuzzCheckout = new EasebuzzCheckout(data.key, "test");
+				let options = {
+					access_key: data.access_url,
+					onResponse: async (response) => {
+						const { data } = await axios.post("http://localhost:8000/api/test/payment_result", response);
+						console.log(data);
+					},
+				};
+				eazebuuzzCheckout.initiatePayment(options);
 			}
 		} catch (err) {
 			console.error(err);
